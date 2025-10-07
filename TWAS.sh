@@ -1,19 +1,29 @@
 #!/bin/bash
 
-GWAS_TOOLS=/Xcan/summary-gwas-imputation/src
-MRI=/TWAS/brain_data/brain/txt_xcan
-DATA=/Xcan/cad_data/data
-OUTPUT=/Xcan/mri_output/
-METAXCAN=/Xcan/MetaXcan/software
+# Define directory paths
+GWAS_TOOLS=/Xcan/summary-gwas-imputation/src      # Summary GWAS imputation tools
+MRI=/TWAS/brain_data/brain/txt_xcan               # Input MRI GWAS summary statistics
+DATA=/Xcan/cad_data/data                          # Reference data directory
+OUTPUT=/Xcan/mri_output/                          # Output directory for results
+METAXCAN=/Xcan/MetaXcan/software                  # MetaXcan software directory
 
+# Define tissues for gene expression analysis
+# Selected based on relevance to abdomen, heart, and brain organs
 tissues=(
+   # Abdominal tissues
    "Adipose_Visceral_Omentum"
    "Adipose_Subcutaneous"
-   "Whole_Blood"
-   "Cells_EBV-transformed_lymphocytes"
+   "Liver"
+   "Pancreas"
+   
+   # Cardiovascular tissues
    "Artery_Coronary"
    "Artery_Aorta" 
    "Artery_Tibial"
+   "Heart_Left_Ventricle"
+   "Heart_Atrial_Appendage"
+   
+   # Brain tissues
    "Brain_Amygdala"
    "Brain_Cerebellum"
    "Brain_Cortex"
@@ -27,18 +37,31 @@ tissues=(
    "Brain_Spinal_cord_cervical_c-1"
    "Brain_Substantia_nigra"
    "Brain_Caudate_basal_ganglia"
-   "Heart_Left_Ventricle"
-   "Heart_Atrial_Appendage"
-   "Liver"
-   "Pancreas"
+   
+   # Other relevant tissues
+   "Whole_Blood"
+   "Cells_EBV-transformed_lymphocytes"
 )
+
+# ==============================================================================
+# Main Processing Loop
+# ==============================================================================
+# Process every 39th phenotype (based on modulo operation)
+# This allows for parallel processing across multiple jobs
 
 count=0
 for pheno in "${phenos[@]}"; do
     ((count++))
     
+    # Process only phenotypes where count is divisible by 39
     if [ $((count % 39)) -eq 0 ]; then
         echo "Processing phenotype: ${pheno}"
+        
+        # ======================================================================
+        # Step 1: Parse and harmonize GWAS summary statistics
+        # ======================================================================
+        # Convert GWAS summary statistics to standard format and lift over
+        # from hg19 to hg38 genome build
         
         python "$GWAS_TOOLS/gwas_parsing.py" \
         -gwas_file "$MRI/${pheno}.txt" \
@@ -59,6 +82,12 @@ for pheno in "${phenos[@]}"; do
         --insert_value frequency NA \
         -output_order variant_id panel_variant_id chromosome position effect_allele non_effect_allele frequency pvalue zscore effect_size standard_error sample_size n_cases
 
+        # ======================================================================
+        # Step 2: Summary-level imputation using 1000 Genomes reference panel
+        # ======================================================================
+        # Impute ungenotyped variants using LD information from 1000 Genomes
+        # Process each chromosome in 10 sub-batches for parallel processing
+        
         for chr in {1..22}; do
             for batch in {0..9}; do
                 echo "Processing chromosome ${chr}, sub-batch ${batch}"
@@ -81,6 +110,11 @@ for pheno in "${phenos[@]}"; do
             done
         done
 
+        # ======================================================================
+        # Step 3: Post-process imputed summary statistics
+        # ======================================================================
+        # Combine results from all chromosomes and sub-batches into single file
+        
         python "$GWAS_TOOLS/gwas_summary_imputation_postprocess.py" \
         -gwas_file "$OUTPUT/harmonized_gwas/${pheno}.txt.gz" \
         -folder "$OUTPUT/summary_imputation_1000G" \
@@ -88,6 +122,12 @@ for pheno in "${phenos[@]}"; do
         -parsimony 7 \
         -output "$OUTPUT/processed_summary_imputation_1000G/imputed_${pheno}.txt.gz"
 
+        # ======================================================================
+        # Step 4: Run S-PrediXcan for each tissue
+        # ======================================================================
+        # Associate predicted gene expression with imaging traits using
+        # pre-computed gene expression prediction models (GTEx MASHR models)
+        
         for tissue in "${tissues[@]}"; do
             echo "Processing tissue: ${tissue}"
             
@@ -106,7 +146,7 @@ for pheno in "${phenos[@]}"; do
             --output_file "$OUTPUT/spredixcan/eqtl/${pheno}_PM__${tissue}.csv"
         done
     else
+        # Skip phenotypes that don't match the modulo condition
         echo "Skipping phenotype ${pheno} (count: ${count})"
     fi
 done
-
