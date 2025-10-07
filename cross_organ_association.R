@@ -6,9 +6,11 @@ library("writexl")
 library("stringr")
 library("readxl")
 
-
+# Main function to perform cross-organ association analysis
+# Performs linear regression between imaging traits from different organs
 assoc_3<-function(pheno_ab,pheno_heart,pheno_brain,all_data,write_file){
   
+  # Initialize result matrices for three organ pairs
   res_heart_liver1<-as.data.frame(matrix(NA,ncol=6,nrow=length(pheno_ab)*length(pheno_heart)))
   res_heart_brain1<-as.data.frame(matrix(NA,ncol=6,nrow=length(pheno_heart)*length(pheno_brain)))
   res_liver_brain1<-as.data.frame(matrix(NA,ncol=6,nrow=length(pheno_ab)*length(pheno_brain)))
@@ -21,7 +23,7 @@ assoc_3<-function(pheno_ab,pheno_heart,pheno_brain,all_data,write_file){
   res_heart_brain3<-as.data.frame(matrix(NA,ncol=6,nrow=length(pheno_heart)*length(pheno_brain)))
   res_liver_brain3<-as.data.frame(matrix(NA,ncol=6,nrow=length(pheno_ab)*length(pheno_brain)))
   
-  
+  # Abdomen-Heart associations
   row1<-1
   for(i in pheno_heart){
     for(j in pheno_ab){
@@ -47,7 +49,7 @@ assoc_3<-function(pheno_ab,pheno_heart,pheno_brain,all_data,write_file){
     }
   }
   
-  
+  # Heart-Brain associations
   row2<-1
   for(i in pheno_brain){
     for(j in pheno_heart){
@@ -72,7 +74,8 @@ assoc_3<-function(pheno_ab,pheno_heart,pheno_brain,all_data,write_file){
       row2<-row2+1
     }
   }
-  
+
+  # Abdomen-Brain associations
   row3<-1
   for(i in pheno_brain){
     for(j in pheno_ab){
@@ -119,5 +122,6 @@ assoc_3<-function(pheno_ab,pheno_heart,pheno_brain,all_data,write_file){
   ), path = write_file)
   
 }
+
 
 assoc_3(sel_ab_cmd,sel_heart_cmd,sel_brain_cmd,all_data,"res.xlsx")
