@@ -293,7 +293,7 @@ calculate_nri_idi <- function(data, base_model, new_model, time_point = 8,
                               risk_thresholds = c(0, 0.1, 0.2, 1),
                               n_boot = 50, continuous_nri = TRUE) {
   
-  # ---- 辅助函数：计算个体风险 ----
+  # ---- Functions for individual risk ----
   get_risk <- function(model, data, time_point) {
     tryCatch({
       lp <- predict(model, type = "lp", newdata = data)
@@ -765,3 +765,4 @@ brier_ci_df <- do.call(rbind, brier_ci_tables)
 brier_ci_df <- brier_ci_df[, c("model", "time", "Brier_score")]
 head(brier_ci_df)
 write.xlsx(brier_ci_df, "Brier_scores_with_CI_2.xlsx", overwrite = TRUE)
+
