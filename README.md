@@ -1,6 +1,8 @@
 # Multi-Organ Network Analysis
 
-This repository contains code used to generate the results of the article titled "Multi-Organ Network of Cardiometabolic Disease-Depression Multimorbidity Revealed by Imaging Phenotypic and Genetic Analyses".
+[![DOI](https://zenodo.org/badge/974044076.svg)](https://doi.org/10.5281/zenodo.17669873)
+
+This repository contains code used to generate the results of the article titled "Multi-Organ Network of Cardiometabolic Disease-Depression Multimorbidity Revealed by Imaging-Derived Phenotypic and Genetic Analyses".
 
 ## Analysis Pipeline
 
